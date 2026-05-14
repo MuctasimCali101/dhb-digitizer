@@ -31,6 +31,7 @@
 
     <div style="margin-top:16px;text-align:center">
       <button class="btn btn-outline btn-sm" id="btn-admin-login" style="width:auto;display:inline-flex">Maamulaha (Admin)</button>
+      <button class="btn btn-warn btn-sm" id="btn-demo" style="width:auto;display:inline-flex;margin-left:4px">Demo Mode</button>
     </div>
   </div>
 
@@ -78,6 +79,21 @@
 
     AUTH.login(username, password, cityCode).then(function(data){
       APP.toast('Soo gelid waa guul!', 'success');
+      localStorage.setItem('dhb_city', cityCode);
+      setTimeout(function(){ location.href = 'dashboard.html' }, 500);
+    }).catch(function(err){
+      APP.toast(err.message, 'error');
+    });
+  };
+
+  /* Demo mode — no backend needed */
+  document.getElementById('btn-demo').onclick = function(){
+    var username = document.getElementById('username').value.trim() || 'engineer1';
+    var password = document.getElementById('password').value.trim() || 'eng123';
+    var cityCode = document.getElementById('city-code').value.trim().toUpperCase() || 'BOS';
+
+    AUTH.demoLogin(username, password, cityCode).then(function(){
+      APP.toast('Demo mode: Soo gelid waa guul!', 'success');
       localStorage.setItem('dhb_city', cityCode);
       setTimeout(function(){ location.href = 'dashboard.html' }, 500);
     }).catch(function(err){

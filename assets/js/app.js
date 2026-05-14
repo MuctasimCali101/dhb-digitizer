@@ -9,7 +9,7 @@ APP.VERSION = '1.0.0';
 
 APP.config = {
   /* Google Apps Script Web App URL — set after deployment */
-  API_URL: 'https://script.google.com/macros/s/AKfycbwqY-18JC1HKI3vlY9NHWTwF1j3zrxbDgoHconk4J0V5jjgwAnHWBeDydX-YYKQK1S9KA/exec',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxQ4vFQY4HWk6P4FuTKjbxZ8mHF16-wEZJF6x9KMoGaCoHTpTFszFJRiQ0kXASvQO7a/exec',
   SUB_DISTRICTS: {
     'Biyo Kulule': ['Suweyto','26ka Juun','Gu\'soore','Girible B','Girible A','Dayaxa','Sanfarow'],
     'Buurcad': ['Sanfarow','Girible Ubax'],

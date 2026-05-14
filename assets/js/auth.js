@@ -4,6 +4,39 @@
 
 var AUTH = AUTH || {};
 
+/* Demo mode: use this if the Apps Script backend isn't deployed yet.
+   Stores data in localStorage for testing. */
+AUTH.DEMO_USERS = {
+  'admin': { password: 'admin', role: 'admin', city: 'ALL', name: 'Admin' },
+  'engineer1': { password: 'eng123', role: 'engineer', city: 'BOS', name: 'Cabirashid' },
+  'engineer2': { password: 'eng123', role: 'engineer', city: 'BOS', name: 'Jaamac' },
+  'super': { password: 'sup123', role: 'supervisor', city: 'BOS', name: 'Supervisor' }
+};
+
+AUTH.demoLogin = function(username, password, cityCode){
+  APP.showLoading('Soo gelida demo...');
+  return new Promise(function(resolve, reject){
+    setTimeout(function(){
+      APP.hideLoading();
+      var u = AUTH.DEMO_USERS[username.toLowerCase()];
+      if(!u || u.password !== password){
+        reject(new Error('Username ama password waa khalad'));
+        return;
+      }
+      if(username.toLowerCase() !== 'admin' && u.city.toUpperCase() !== cityCode.toUpperCase()){
+        reject(new Error('City code kuma haboona account-ka'));
+        return;
+      }
+      localStorage.setItem('dhb_token', 'demo_' + username + '_' + Date.now());
+      localStorage.setItem('dhb_role', u.role);
+      localStorage.setItem('dhb_user', u.name);
+      localStorage.setItem('dhb_city', u.city === 'ALL' ? cityCode.toUpperCase() : u.city);
+      localStorage.setItem('dhb_city_name', u.city === 'ALL' ? 'All Cities' : u.city);
+      resolve({ success: true, role: u.role, username: u.name, city_code: u.city });
+    }, 500);
+  });
+};
+
 /* Simple SHA-256 hash (FIPS 180-4) for token generation.
    Uses the Web Crypto API — available in all modern browsers. */
 AUTH.hash = function(str){
