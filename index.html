@@ -115,6 +115,7 @@ header{background:#0d1f3c;padding:6px 12px;display:flex;align-items:center;justi
   <button class="ctrl-btn" id="btn-gps"><span class="icon">📡</span> Goobta</button>
   <button class="ctrl-btn danger" id="btn-clear"><span class="icon">🗑</span> Nadiifi</button>
   <button class="ctrl-btn primary" id="btn-export"><span class="icon">⬇</span> Soo Deg KML</button>
+  <button class="ctrl-btn primary" id="btn-save-server" style="background:#4488ff;border-color:#4488ff"><span class="icon">☁</span> Keydso Server</button>
 </div>
 
 <div id="status-bar">
@@ -154,6 +155,10 @@ var urlData = {
   engineer: params.get('site_engineer') || '',
   date: params.get('survey_date') || ''
 };
+
+// ---- GOOGLE APPS SCRIPT WEB APP URL ----
+// After deploying Code.gs as a web app, paste the URL here:
+var KML_SAVE_URL = 'https://script.google.com/macros/s/AKfycbxQ4vFQY4HWk6P4FuTKjbxZ8mHF16-wEZJF6x9KMoGaCoHTpTFszFJRiQ0kXASvQO7a/exec';
 
 // ---- STATE ----
 var points = [];
@@ -523,22 +528,82 @@ document.getElementById('btn-export').onclick = function(){
     return;
   }
 
-  var latlngs = points.map(function(p){ return [p.lat, p.lng] });
-  var centroid = polygonCentroid(points);
   var area = sphericalArea(points.map(function(p){ return L.latLng(p.lat, p.lng) }));
   var perim = sphericalPerimeter(points.map(function(p){ return L.latLng(p.lat, p.lng) }));
-
-  var coordsStr = '';
-  for(var i=0; i<points.length; i++){
-    coordsStr += '          ' + points[i].lng + ',' + points[i].lat + ',0\n';
-  }
 
   var ownerName = urlData.owner || 'Unknown';
   var safeOwner = ownerName.replace(/[^a-zA-Z0-9_-]/g, '_');
   var today = new Date().toISOString().slice(0,10);
   var filename = 'DHB_' + safeOwner + '_' + today + '.kml';
 
-  var kml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+  var kml = buildKML(area, perim);
+
+  var blob = new Blob([kml], {type: 'application/vnd.google-earth.kml+xml'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('KML waa la soo degay! Bed: ' + area.toFixed(1) + ' m\u00b2', 'success');
+};
+
+// ---- SAVE KML TO SERVER ----
+document.getElementById('btn-save-server').onclick = function(){
+  if(points.length < 3){
+    showToast('Ugu yaraan 3 dhibcood ayaa loo baahan yahay', 'error');
+    return;
+  }
+
+  var area = sphericalArea(points.map(function(p){ return L.latLng(p.lat, p.lng) }));
+  var perim = sphericalPerimeter(points.map(function(p){ return L.latLng(p.lat, p.lng) }));
+
+  var kml = buildKML(area, perim);
+  var ownerName = urlData.owner || 'Unknown';
+
+  showToast('KML-ka waa la dirayaa server-ka...', 'info');
+
+  var formData = new URLSearchParams();
+  formData.append('kml_content', kml);
+  formData.append('owner_name', ownerName);
+  formData.append('owner_phone', urlData.phone);
+  formData.append('sub_district', urlData.subdistrict);
+  formData.append('section', urlData.section);
+  formData.append('survey_date', urlData.date);
+  formData.append('engineer', urlData.engineer);
+  formData.append('area', area.toFixed(1));
+  formData.append('perimeter', perim.toFixed(1));
+  formData.append('num_points', String(points.length));
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', KML_SAVE_URL, true);
+  xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  xhr.onload = function(){
+    var resp = JSON.parse(xhr.responseText);
+    if(resp.success){
+      showToast('KML waa la keydiyay! Link: ' + resp.url, 'success');
+    } else {
+      showToast('Khalad: ' + (resp.error || 'Unknown'), 'error');
+    }
+  };
+  xhr.onerror = function(){
+    showToast('Khalad: Server lama gaarin. Hubi internet-ka', 'error');
+  };
+  xhr.send(formData.toString());
+};
+
+function buildKML(area, perim){
+  var centroid = polygonCentroid(points);
+  var ownerName = urlData.owner || 'Unknown';
+  var coordsStr = '';
+  for(var i=0; i<points.length; i++){
+    coordsStr += '          ' + points[i].lng + ',' + points[i].lat + ',0\n';
+  }
+
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
 '<kml xmlns="http://www.opengis.net/kml/2.2">\n' +
 '  <Document>\n' +
 '    <name>DHB - ' + esc(ownerName) + '</name>\n' +
@@ -586,19 +651,7 @@ coordsStr +
 '    </Placemark>\n' +
 '  </Document>\n' +
 '</kml>';
-
-  var blob = new Blob([kml], {type: 'application/vnd.google-earth.kml+xml'});
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  showToast('KML waa la soo degay! Bed: ' + area.toFixed(1) + ' m\u00b2', 'success');
-};
+}
 
 // ---- TOAST ----
 function showToast(msg, type){
