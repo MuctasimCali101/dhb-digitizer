@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DHB Land Digitizer</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a1628;color:#fff;overflow:hidden;height:100dvh;display:flex;flex-direction:column}
+#loading-screen{position:fixed;inset:0;background:#0a1628;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s}
+#loading-screen.hidden{opacity:0;pointer-events:none}
+.spinner{width:48px;height:48px;border:4px solid rgba(0,200,150,.2);border-top-color:#00c896;border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{color:#00c896;font-size:16px}
+header{background:#0d1f3c;padding:6px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,200,150,.2);flex-shrink:0;min-height:48px}
+.header-left{display:flex;flex-direction:column}
+.header-title{color:#00c896;font-size:15px;font-weight:700;line-height:1.2}
+.header-sub{color:#8899aa;font-size:10px;line-height:1.2}
+.header-right{display:flex;align-items:center;gap:4px}
+.status-badge{background:rgba(0,200,150,.15);color:#00c896;padding:2px 8px;border-radius:4px;font-size:10px;white-space:nowrap}
+#info-panel{background:#0d1f3c;padding:6px 12px;display:none;flex-shrink:0;border-bottom:1px solid rgba(0,200,150,.1);font-size:11px;gap:4px;flex-wrap:wrap}
+#info-panel.show{display:flex}
+.info-item{color:#ccd;margin-right:12px}
+.info-item strong{color:#00c896}
+#map-container{flex:1;position:relative;min-height:0}
+#map{width:100%;height:100%}
+.leaflet-control-zoom a{background:#0d1f3c!important;color:#fff!important;border-color:rgba(0,200,150,.3)!important}
+.leaflet-control-attribution{font-size:8px!important;background:rgba(10,22,40,.7)!important;color:#8899aa!important}
+.leaflet-control-attribution a{color:#00c896!important}
+#controls{background:#0d1f3c;padding:6px 8px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;flex-shrink:0;border-top:1px solid rgba(0,200,150,.2)}
+.ctrl-btn{background:transparent;border:1px solid rgba(0,200,150,.3);color:#fff;padding:8px 12px;border-radius:6px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;min-height:44px;touch-action:manipulation;transition:.15s;flex:1;justify-content:center;min-width:0}
+.ctrl-btn:active{transform:scale(.96)}
+.ctrl-btn.primary{background:#00c896;color:#0a1628;font-weight:700;border-color:#00c896}
+.ctrl-btn.primary:active{background:#00b084}
+.ctrl-btn.danger{background:transparent;border-color:rgba(255,80,80,.4);color:#ff5c5c}
+.ctrl-btn.danger:active{background:rgba(255,80,80,.15)}
+.ctrl-btn:disabled{opacity:.4;pointer-events:none}
+.ctrl-btn .icon{font-size:14px}
+#status-bar{background:#0a1628;padding:3px 12px;display:flex;gap:12px;font-size:10px;color:#8899aa;flex-shrink:0;border-top:1px solid rgba(0,200,150,.1)}
+#status-bar .stat{display:flex;align-items:center;gap:3px}
+#status-bar .stat span{color:#00c896;font-weight:600}
+#coord-panel{background:#0d1f3c;max-height:0;overflow:hidden;transition:max-height .3s ease;flex-shrink:0}
+#coord-panel.open{max-height:200px}
+#coord-list{padding:6px 12px 8px;font-size:10px;color:#aab;max-height:160px;overflow-y:auto;font-family:monospace}
+#coord-list .pt-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.coord-toggle{background:none;border:none;color:#00c896;font-size:10px;cursor:pointer;padding:4px}
+.toast-container{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9998;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast{background:#0d1f3c;border:1px solid;padding:10px 18px;border-radius:8px;font-size:13px;animation:toastIn .3s ease;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+.toast.success{border-color:#00c896;color:#00c896}
+.toast.error{border-color:#ff8844;color:#ff8844}
+.toast.info{border-color:#4488ff;color:#4488ff}
+@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+#confirm-dialog{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:9997}
+#confirm-dialog.show{display:flex}
+.confirm-box{background:#0d1f3c;border:1px solid rgba(255,80,80,.3);border-radius:12px;padding:24px;max-width:320px;width:90%;text-align:center}
+.confirm-box p{color:#ddd;font-size:14px;margin-bottom:16px;line-height:1.5}
+.confirm-btns{display:flex;gap:8px}
+.confirm-btns button{flex:1;padding:12px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid;min-height:44px}
+.confirm-btns .btn-yes{background:#ff5c5c;color:#fff;border-color:#ff5c5c}
+.confirm-btns .btn-no{background:transparent;color:#aaa;border-color:#555}
+.gps-dot{width:12px;height:12px;background:#4488ff;border:2px solid #fff;border-radius:50%}
+.gps-accuracy{background:rgba(68,136,255,.15);border:1px solid rgba(68,136,255,.3)}
+.dist-label{background:#0a1628;color:#00c896;font-size:9px;font-weight:700;padding:1px 5px;border:1px solid rgba(0,200,150,.4);border-radius:3px;white-space:nowrap;text-align:center}
+.leaflet-popup-content-wrapper{background:#0d1f3c;color:#fff;border:1px solid rgba(0,200,150,.3);border-radius:8px}
+.leaflet-popup-tip{background:#0d1f3c;border-color:rgba(0,200,150,.3)}
+.leaflet-popup-content{margin:8px 12px;font-size:12px;text-align:center}
+.popup-del-btn{background:#ff5c5c;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:12px;cursor:pointer;min-height:36px;margin-top:4px;width:100%}
+.popup-del-btn:active{opacity:.8}
+@media(max-width:420px){
+  .ctrl-btn{font-size:10px;padding:6px 8px}
+  .ctrl-btn .icon{font-size:12px}
+  header{padding:4px 8px}
+  .header-title{font-size:13px}
+  #info-panel{font-size:10px}
+  .info-item{margin-right:8px}
+  .dist-label{font-size:8px;padding:1px 3px}
+}
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <div class="loading-text">Soo rarista khariidadda...</div>
+</div>
+
+<header>
+  <div class="header-left">
+    <div class="header-title">DHB Land Digitizer</div>
+    <div class="header-sub">Foorma Caddeynta Hanti Ma Guuratda</div>
+  </div>
+  <div class="header-right">
+    <div class="status-badge" id="gps-status">GPS: ✗</div>
+  </div>
+</header>
+
+<div id="info-panel"></div>
+
+<div id="map-container">
+  <div id="map"></div>
+</div>
+
+<div id="coord-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 12px">
+    <span style="color:#00c896;font-size:11px">Iskuduwaha &gt;: </span>
+    <span id="pt-count" style="color:#8899aa;font-size:10px">0 dhibcood</span>
+  </div>
+  <div id="coord-list"></div>
+</div>
+
+<div id="controls">
+  <button class="ctrl-btn" id="btn-undo" disabled title="Undo last point"><span class="icon">↩</span> Dib</button>
+  <button class="ctrl-btn" id="btn-coords"><span class="icon">📍</span> Iskuduway</button>
+  <button class="ctrl-btn" id="btn-gps"><span class="icon">📡</span> Goobta</button>
+  <button class="ctrl-btn danger" id="btn-clear"><span class="icon">🗑</span> Nadiifi</button>
+  <button class="ctrl-btn primary" id="btn-export"><span class="icon">⬇</span> Soo Deg KML</button>
+</div>
+
+<div id="status-bar">
+  <div class="stat">Dhibcood: <span id="stat-points">0</span></div>
+  <div class="stat">Bed: <span id="stat-area">0 m²</span></div>
+  <div class="stat">Wareeg: <span id="stat-perim">0 m</span></div>
+  <div class="stat" id="stat-gps-acc">GPS: -</div>
+</div>
+
+<div id="toast-container" class="toast-container"></div>
+
+<div id="confirm-dialog">
+  <div class="confirm-box">
+    <p id="confirm-msg">Ma hubtaa inaad nadiifiso dhibcaha oo dhan?</p>
+    <div class="confirm-btns">
+      <button class="btn-no" id="confirm-no">Haya</button>
+      <button class="btn-yes" id="confirm-yes">Haa</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+'use strict';
+
+// ---- URL PARAMS ----
+var params = new URLSearchParams(location.search);
+var urlData = {
+  owner: params.get('owner_name') || '',
+  phone: params.get('owner_phone') || '',
+  subdistrict: params.get('sub_district') || '',
+  section: params.get('section') || '',
+  width: params.get('width') || '',
+  length: params.get('length') || '',
+  area: params.get('area_calc') || '',
+  engineer: params.get('site_engineer') || '',
+  date: params.get('survey_date') || ''
+};
+
+// ---- STATE ----
+var points = [];
+var markers = [];
+var distLabels = [];
+var polyline = null;
+var polygon = null;
+var coordPanelOpen = false;
+var gpsMarker = null;
+var gpsAccuracyCircle = null;
+var gpsWatchId = null;
+var isLocating = false;
+
+// ---- INIT MAP ----
+var map = L.map('map', {
+  center: [11.2842, 49.1816],
+  zoom: 17,
+  maxZoom: 21,
+  minZoom: 5,
+  zoomControl: true,
+  attributionControl: true
+});
+
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+var osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 21,
+  attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+});
+
+var googleSatLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+  maxZoom: 21,
+  attribution: 'Google'
+});
+
+osmLayer.addTo(map);
+
+var baseLayers = {
+  "Khariidadda Waddooyinka": osmLayer,
+  "Khariidadda Dayax-gacmeedka": googleSatLayer
+};
+
+L.control.layers(baseLayers, null, {position:'topleft'}).addTo(map);
+
+// ---- INFO PANEL ----
+function renderInfoPanel(){
+  var panel = document.getElementById('info-panel');
+  var hasData = urlData.owner || urlData.subdistrict || urlData.section;
+  if(!hasData){ panel.classList.remove('show'); return }
+  panel.classList.add('show');
+  panel.innerHTML =
+    '<span class="info-item"><strong>Milkiilaha:</strong> ' + esc(urlData.owner) + '</span>' +
+    '<span class="info-item"><strong>Tel:</strong> ' + esc(urlData.phone) + '</span>' +
+    '<span class="info-item"><strong>Degmo:</strong> ' + esc(urlData.subdistrict) + '</span>' +
+    '<span class="info-item"><strong>Xaafad:</strong> ' + esc(urlData.section) + '</span>' +
+    '<span class="info-item"><strong>Bed:</strong> ' + esc(urlData.area) + ' m&#178;</span>' +
+    '<span class="info-item"><strong>Injineer:</strong> ' + esc(urlData.engineer) + '</span>' +
+    '<span class="info-item"><strong>Taariikh:</strong> ' + esc(urlData.date) + '</span>';
+}
+
+function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML }
+
+renderInfoPanel();
+
+// ---- GEOMETRY HELPERS ----
+function toRad(d){ return d * Math.PI / 180 }
+
+function haversineDist(p1, p2){
+  var dlat = toRad(p2.lat - p1.lat);
+  var dlng = toRad(p2.lng - p1.lng);
+  var a = Math.sin(dlat/2)*Math.sin(dlat/2) + Math.cos(toRad(p1.lat))*Math.cos(toRad(p2.lat))*Math.sin(dlng/2)*Math.sin(dlng/2);
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function sphericalArea(latlngs){
+  if(latlngs.length < 3) return 0;
+  var R = 6371000, area = 0, n = latlngs.length;
+  for(var i=0; i<n; i++){
+    var j = (i+1)%n, k = (i+2)%n;
+    area += toRad(latlngs[k].lng - latlngs[i].lng) * Math.sin(toRad(latlngs[j].lat));
+  }
+  return Math.abs(area * R * R / 2);
+}
+
+function sphericalPerimeter(latlngs){
+  if(latlngs.length < 2) return 0;
+  var perim = 0, n = latlngs.length;
+  for(var i=0; i<n; i++){
+    var j = (i+1)%n;
+    if(n < 3 && j === 0) break;
+    perim += haversineDist(latlngs[i], latlngs[j]);
+  }
+  return perim;
+}
+
+function polygonCentroid(arr){
+  if(arr.length === 0) return null;
+  var lat=0, lng=0;
+  for(var i=0;i<arr.length;i++){ lat+=arr[i].lat; lng+=arr[i].lng }
+  return {lat: lat/arr.length, lng: lng/arr.length};
+}
+
+// ---- MARKER FACTORY ----
+function createMarker(lat, lng, idx){
+  var marker = L.marker([lat, lng], {
+    draggable: true,
+    icon: L.divIcon({
+      className: 'pt-marker',
+      html: '<div style="background:#00c896;color:#0a1628;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.5);cursor:grab">' + (idx+1) + '</div>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12]
+    })
+  });
+
+  marker.on('drag', function(){
+    var p = marker.getLatLng();
+    points[idx].lat = p.lat;
+    points[idx].lng = p.lng;
+    renderPolygon();
+  });
+
+  marker.on('click', function(){
+    var popupContent =
+      '<div style="color:#fff;font-size:13px">Dhibcood #' + (idx+1) + '</div>' +
+      '<button class="popup-del-btn" onclick="window._deletePoint(' + idx + ')">&#10005; Tirtir</button>';
+    marker.bindPopup(popupContent, {closeButton: true, className: 'point-popup'}).openPopup();
+  });
+
+  return marker;
+}
+
+// ---- RENDER ----
+function renderPolygon(){
+  clearDistLabels();
+  if(polyline){ map.removeLayer(polyline); polyline = null }
+  if(polygon){ map.removeLayer(polygon); polygon = null }
+
+  var latlngs = points.map(function(p){ return [p.lat, p.lng] });
+
+  if(latlngs.length >= 2){
+    polyline = L.polyline(latlngs, {
+      color: '#00c896', weight: 3, opacity: 0.9
+    }).addTo(map);
+
+    if(latlngs.length >= 3){
+      var closed = latlngs.concat([latlngs[0]]);
+      polyline.setLatLngs(closed);
+
+      polygon = L.polygon(latlngs, {
+        color: '#00c896', weight: 2, fillColor: '#00c896', fillOpacity: 0.15
+      }).addTo(map);
+
+      renderDistLabels(latlngs);
+    }
+  }
+
+  updateStats();
+  updateCoordList();
+  updateButtons();
+}
+
+// ---- DISTANCE LABELS ----
+function renderDistLabels(latlngs){
+  var n = latlngs.length;
+  for(var i=0; i<n; i++){
+    var j = (i+1) % n;
+    var p1 = {lat: latlngs[i][0], lng: latlngs[i][1]};
+    var p2 = {lat: latlngs[j][0], lng: latlngs[j][1]};
+    var dist = haversineDist(p1, p2);
+    var midLat = (p1.lat + p2.lat) / 2;
+    var midLng = (p1.lng + p2.lng) / 2;
+    var label = dist < 1000 ? dist.toFixed(1) + ' m' : (dist/1000).toFixed(2) + ' km';
+    var lbl = L.marker([midLat, midLng], {
+      icon: L.divIcon({
+        className: 'dist-label',
+        html: label,
+        iconSize: [null, null],
+        iconAnchor: [0, 0]
+      }),
+      interactive: false
+    }).addTo(map);
+    distLabels.push(lbl);
+  }
+}
+
+function clearDistLabels(){
+  for(var i=0; i<distLabels.length; i++) map.removeLayer(distLabels[i]);
+  distLabels = [];
+}
+
+function updateStats(){
+  var latlngs = points.map(function(p){ return L.latLng(p.lat, p.lng) });
+  var area = sphericalArea(latlngs);
+  var perim = points.length >= 2 ? sphericalPerimeter(latlngs) : 0;
+  document.getElementById('stat-points').textContent = points.length;
+  document.getElementById('stat-area').textContent = area.toFixed(1) + ' m&#178;';
+  document.getElementById('stat-perim').textContent = perim.toFixed(1) + ' m';
+  document.getElementById('pt-count').textContent = points.length + ' dhibcood';
+}
+
+function updateCoordList(){
+  var list = document.getElementById('coord-list');
+  list.innerHTML = '';
+  points.forEach(function(p, i){
+    var row = document.createElement('div');
+    row.className = 'pt-row';
+    row.innerHTML = '<span>#' + (i+1) + ': ' + p.lat.toFixed(6) + ', ' + p.lng.toFixed(6) + '</span>';
+    list.appendChild(row);
+  });
+}
+
+function updateButtons(){
+  document.getElementById('btn-undo').disabled = points.length === 0;
+}
+
+// ---- MAP CLICK ----
+map.on('click', function(e){
+  addPoint(e.latlng.lat, e.latlng.lng);
+});
+
+function addPoint(lat, lng){
+  var idx = points.length;
+  points.push({lat: lat, lng: lng});
+  var marker = createMarker(lat, lng, idx);
+  marker.addTo(map);
+  markers.push(marker);
+  renderPolygon();
+  showToast('Dhibcood #' + (idx+1) + ' waa la daray', 'success');
+}
+
+// ---- DELETE POINT ----
+window._deletePoint = function(idx){
+  map.closePopup();
+  if(idx < 0 || idx >= points.length) return;
+  points.splice(idx, 1);
+  var m = markers.splice(idx, 1)[0];
+  if(m) map.removeLayer(m);
+  rebuildMarkers();
+  renderPolygon();
+  showToast('Dhibcood #' + (idx+1) + ' waa la tirtiray', 'info');
+};
+
+function rebuildMarkers(){
+  for(var i=0; i<markers.length; i++) map.removeLayer(markers[i]);
+  markers = [];
+  for(var i=0; i<points.length; i++){
+    var p = points[i];
+    var marker = createMarker(p.lat, p.lng, i);
+    marker.addTo(map);
+    markers.push(marker);
+  }
+}
+
+// ---- UNDO ----
+function undoPoint(){
+  if(points.length === 0) return;
+  points.pop();
+  var m = markers.pop();
+  if(m) map.removeLayer(m);
+  renderPolygon();
+  showToast('Dhibcii waxaa laga noqday', 'info');
+}
+
+// ---- CLEAR ----
+function clearAll(){
+  document.getElementById('confirm-dialog').classList.add('show');
+}
+
+document.getElementById('confirm-yes').onclick = function(){
+  doClear();
+  document.getElementById('confirm-dialog').classList.remove('show');
+};
+
+document.getElementById('confirm-no').onclick = function(){
+  document.getElementById('confirm-dialog').classList.remove('show');
+};
+
+function doClear(){
+  for(var i=0; i<markers.length; i++) map.removeLayer(markers[i]);
+  markers = [];
+  points = [];
+  clearDistLabels();
+  if(polyline){ map.removeLayer(polyline); polyline = null }
+  if(polygon){ map.removeLayer(polygon); polygon = null }
+  renderPolygon();
+  updateCoordList();
+  updateButtons();
+  showToast('Dhibcaha waa la nadiifiyay', 'info');
+}
+
+// ---- COORD PANEL TOGGLE ----
+document.getElementById('btn-coords').onclick = function(){
+  coordPanelOpen = !coordPanelOpen;
+  document.getElementById('coord-panel').classList.toggle('open', coordPanelOpen);
+};
+
+// ---- GPS ----
+document.getElementById('btn-gps').onclick = function(){
+  if(isLocating){ stopGPS(); return }
+  startGPS();
+};
+
+function startGPS(){
+  if(!navigator.geolocation){
+    showToast('GPS kama shaqeeyo qalabkan', 'error');
+    return;
+  }
+  isLocating = true;
+  document.getElementById('btn-gps').innerHTML = '<span class="icon">⏹</span> Jooji';
+  document.getElementById('gps-status').textContent = 'GPS: \u231b';
+
+  gpsWatchId = navigator.geolocation.watchPosition(
+    function(pos){
+      var lat = pos.coords.latitude, lng = pos.coords.longitude, acc = pos.coords.accuracy;
+      document.getElementById('gps-status').textContent = 'GPS: \u2713';
+      document.getElementById('stat-gps-acc').textContent = 'GPS: ' + (acc < 1 ? '<1' : Math.round(acc)) + 'm';
+
+      if(!gpsMarker){
+        gpsMarker = L.marker([lat, lng], {
+          icon: L.divIcon({
+            className: 'gps-marker',
+            html: '<div class="gps-dot"></div>',
+            iconSize: [12, 12],
+            iconAnchor: [6, 6]
+          })
+        }).addTo(map);
+      } else {
+        gpsMarker.setLatLng([lat, lng]);
+      }
+
+      if(gpsAccuracyCircle) map.removeLayer(gpsAccuracyCircle);
+      gpsAccuracyCircle = L.circle([lat, lng], {
+        radius: acc || 50,
+        color: '#4488ff',
+        fillColor: 'rgba(68,136,255,.15)',
+        fillOpacity: 0.3,
+        weight: 1
+      }).addTo(map);
+
+      map.setView([lat, lng], map.getZoom());
+    },
+    function(err){
+      showToast('GPS khalad: ' + err.message, 'error');
+      document.getElementById('gps-status').textContent = 'GPS: \u2717';
+    },
+    {enableHighAccuracy: true, timeout: 15000, maximumAge: 5000}
+  );
+}
+
+function stopGPS(){
+  isLocating = false;
+  if(gpsWatchId !== null){
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  if(gpsMarker){ map.removeLayer(gpsMarker); gpsMarker = null }
+  if(gpsAccuracyCircle){ map.removeLayer(gpsAccuracyCircle); gpsAccuracyCircle = null }
+  document.getElementById('btn-gps').innerHTML = '<span class="icon">\ud83d\udce1</span> Goobta';
+  document.getElementById('gps-status').textContent = 'GPS: \u2717';
+  document.getElementById('stat-gps-acc').textContent = 'GPS: -';
+}
+
+// ---- KML EXPORT ----
+document.getElementById('btn-export').onclick = function(){
+  if(points.length < 3){
+    showToast('Ugu yaraan 3 dhibcood ayaa loo baahan yahay', 'error');
+    return;
+  }
+
+  var latlngs = points.map(function(p){ return [p.lat, p.lng] });
+  var centroid = polygonCentroid(points);
+  var area = sphericalArea(points.map(function(p){ return L.latLng(p.lat, p.lng) }));
+  var perim = sphericalPerimeter(points.map(function(p){ return L.latLng(p.lat, p.lng) }));
+
+  var coordsStr = '';
+  for(var i=0; i<points.length; i++){
+    coordsStr += '          ' + points[i].lng + ',' + points[i].lat + ',0\n';
+  }
+
+  var ownerName = urlData.owner || 'Unknown';
+  var safeOwner = ownerName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  var today = new Date().toISOString().slice(0,10);
+  var filename = 'DHB_' + safeOwner + '_' + today + '.kml';
+
+  var kml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+'<kml xmlns="http://www.opengis.net/kml/2.2">\n' +
+'  <Document>\n' +
+'    <name>DHB - ' + esc(ownerName) + '</name>\n' +
+'    <Style id="polyStyle">\n' +
+'      <LineStyle><color>ff00c896</color><width>3</width></LineStyle>\n' +
+'      <PolyStyle><color>4c00c896</color></PolyStyle>\n' +
+'    </Style>\n' +
+'    <Style id="pinStyle">\n' +
+'      <IconStyle><scale>1.2</scale></IconStyle>\n' +
+'    </Style>\n' +
+'    <Placemark>\n' +
+'      <name>Xuddunta Dhulka</name>\n' +
+'      <styleUrl>#pinStyle</styleUrl>\n' +
+'      <Point>\n' +
+'        <coordinates>' + centroid.lng + ',' + centroid.lat + ',0</coordinates>\n' +
+'      </Point>\n' +
+'      <description><![CDATA[\n' +
+'        <b>DHB Land Registration</b><br>\n' +
+'        <b>Milkiilaha:</b> ' + esc(urlData.owner) + '<br>\n' +
+'        <b>Tel:</b> ' + esc(urlData.phone) + '<br>\n' +
+'        <b>Degmo:</b> ' + esc(urlData.subdistrict) + '<br>\n' +
+'        <b>Xaafad:</b> ' + esc(urlData.section) + '<br>\n' +
+'        <b>Bed:</b> ' + area.toFixed(1) + ' m&#178;<br>\n' +
+'        <b>Wareeg:</b> ' + perim.toFixed(1) + ' m<br>\n' +
+'        <b>Injineer:</b> ' + esc(urlData.engineer) + '<br>\n' +
+'        <b>Taariikh:</b> ' + esc(urlData.date) + '<br>\n' +
+'        <b>Dhibcood:</b> ' + points.length + '\n' +
+'      ]]></description>\n' +
+'    </Placemark>\n' +
+'    <Placemark>\n' +
+'      <name>Xuduudaha Dhulka</name>\n' +
+'      <styleUrl>#polyStyle</styleUrl>\n' +
+'      <Polygon>\n' +
+'        <outerBoundaryIs>\n' +
+'          <LinearRing>\n' +
+'            <coordinates>\n' +
+coordsStr +
+'          </coordinates>\n' +
+'          </LinearRing>\n' +
+'        </outerBoundaryIs>\n' +
+'      </Polygon>\n' +
+'      <description><![CDATA[\n' +
+'        Area: ' + area.toFixed(1) + ' m&#178; | Perimeter: ' + perim.toFixed(1) + ' m\n' +
+'      ]]></description>\n' +
+'    </Placemark>\n' +
+'  </Document>\n' +
+'</kml>';
+
+  var blob = new Blob([kml], {type: 'application/vnd.google-earth.kml+xml'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showToast('KML waa la soo degay! Bed: ' + area.toFixed(1) + ' m\u00b2', 'success');
+};
+
+// ---- TOAST ----
+function showToast(msg, type){
+  var container = document.getElementById('toast-container');
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type || 'info');
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(function(){
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .3s';
+    setTimeout(function(){ el.remove() }, 300);
+  }, 3000);
+}
+
+// ---- KEYBOARD ----
+document.addEventListener('keydown', function(e){
+  if(e.key === 'z' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); undoPoint() }
+});
+
+// ---- HIDE LOADING SCREEN ----
+function hideLoading(){
+  var el = document.getElementById('loading-screen');
+  if(el) el.classList.add('hidden');
+}
+map.whenReady(hideLoading);
+setTimeout(hideLoading, 3000);
+
+}());
+</script>
+</body>
+</html>
