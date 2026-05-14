@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DHB — Admin Panel</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div class="logo"><div class="logo-icon">DHB</div><div><div class="logo-text">Admin Panel</div><div class="header-sub">Maamulka Nidaamka</div></div></div>
+    <div class="header-right"><button class="btn btn-sm btn-outline" onclick="APP.logout()" style="width:auto">Bax</button></div>
+  </header>
+
+  <!-- Tabs -->
+  <div style="display:flex;padding:4px 8px;gap:4px;flex-shrink:0;overflow-x:auto">
+    <button class="btn btn-sm btn-primary tab-btn" data-tab="users" style="width:auto">Isticmaalayaal</button>
+    <button class="btn btn-sm btn-outline tab-btn" data-tab="cities" style="width:auto">Magaalooyin</button>
+    <button class="btn btn-sm btn-outline tab-btn" data-tab="data" style="width:auto">Xogta</button>
+  </div>
+
+  <div class="app-content">
+    <!-- Users Tab -->
+    <div class="tab-content" id="tab-users">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title">Isticmaalayaasha</div>
+        <button class="btn btn-sm btn-primary" id="btn-add-user" style="width:auto">+ Cusub</button>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Username</th><th>Role</th><th>City</th><th>Last Login</th><th>Status</th><th></th></tr></thead>
+        <tbody id="users-body"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Soo rarayaa...</td></tr></tbody>
+      </div>
+    </div>
+
+    <!-- Cities Tab -->
+    <div class="tab-content hidden" id="tab-cities">
+      <div class="card-title">Magaalooyinka</div>
+      <div class="table-wrap">
+        <table><thead><tr><th>City Code</th><th>City Name</th><th>Status</th></tr></thead>
+        <tbody id="cities-body"><tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">Soo rarayaa...</td></tr></tbody>
+      </div>
+    </div>
+
+    <!-- Data Tab -->
+    <div class="tab-content hidden" id="tab-data">
+      <div class="card-title">Xogta Guud</div>
+      <button class="btn btn-sm btn-primary" id="btn-export-all" style="width:auto;margin-bottom:8px">Soo Deg CSV</button>
+      <div class="table-wrap">
+        <table><thead><tr><th>ID</th><th>City</th><th>Owner</th><th>Area</th><th>Date</th></tr></thead>
+        <tbody id="data-body"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Soo rarayaa...</td></tr></tbody>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- User Modal -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal">
+    <h3 id="user-modal-title">Isticmaale Cusub</h3>
+    <input type="hidden" id="edit-user-id">
+    <div class="form-group"><label class="form-label">Username</label><input class="form-input" id="modal-username" type="text" required></div>
+    <div class="form-group"><label class="form-label">Password</label><input class="form-input" id="modal-password" type="password" placeholder="Ku daa nuxurka haddii aad wax ka beddeleyso"></div>
+    <div class="form-group"><label class="form-label">Role</label>
+      <select class="form-input form-select" id="modal-role"><option value="engineer">Field Engineer</option><option value="supervisor">Supervisor</option><option value="admin">Admin</option></select>
+    </div>
+    <div class="form-group"><label class="form-label">City Code</label><input class="form-input" id="modal-city" type="text" placeholder="TUSAALE: BOS"></div>
+    <div class="form-group"><label class="form-checkbox"><input type="checkbox" id="modal-active" checked> Active</label></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+(function(){
+  if(!APP.requireRole('admin')) return;
+
+  /* Tab switching */
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.onclick = function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.className = b.className.replace('btn-primary','btn-outline'); b.classList.add('btn-outline') });
+      this.className = this.className.replace('btn-outline','btn-primary'); this.classList.add('btn-primary');
+      document.querySelectorAll('.tab-content').forEach(function(t){ t.classList.add('hidden') });
+      var tab = document.getElementById('tab-' + this.getAttribute('data-tab'));
+      if(tab) tab.classList.remove('hidden');
+    };
+  });
+
+  function loadUsers(){
+    API.getUsers().then(function(data){
+      var rows = data.users || [];
+      var tbody = document.getElementById('users-body');
+      if(rows.length === 0){ tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3)">Ma jiro istiicmaalayaal</td></tr>'; return }
+      var html = '';
+      rows.forEach(function(u){
+        html += '<tr>' +
+          '<td style="font-weight:600">' + APP.esc(u.username) + '</td>' +
+          '<td>' + APP.esc(u.role) + '</td>' +
+          '<td>' + APP.esc(u.city_code) + '</td>' +
+          '<td style="font-size:10px">' + (u.last_login || '-') + '</td>' +
+          '<td><span class="status-badge ' + (u.active !== false ? 'status-submitted' : 'status-draft') + '">' + (u.active !== false ? 'Firfircoon' : 'Hawl Gabay') + '</span></td>' +
+          '<td><button class="btn btn-sm btn-outline" onclick="editUser(' + u.user_id + ')">Bedel</button></td>' +
+        '</tr>';
+      });
+      tbody.innerHTML = html;
+    }).catch(function(err){
+      document.getElementById('users-body').innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--warn);padding:20px">Khalad: ' + APP.esc(err.message) + '</td></tr>';
+    });
+  }
+
+  function loadCities(){
+    API.getCities().then(function(data){
+      var rows = data.cities || [];
+      var tbody = document.getElementById('cities-body');
+      if(rows.length === 0){ tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text3)">Ma jiro magaalooyin</td></tr>'; return }
+      var html = '';
+      rows.forEach(function(c){
+        html += '<tr><td style="font-weight:600">' + APP.esc(c.city_code) + '</td><td>' + APP.esc(c.city_name) + '</td><td><span class="status-badge ' + (c.active !== false ? 'status-submitted' : 'status-draft') + '">' + (c.active !== false ? 'Active' : 'Inactive') + '</span></td></tr>';
+      });
+      tbody.innerHTML = html;
+    });
+  }
+
+  function loadAllData(){
+    API.call({action:'getSubmissions', token: APP.getToken(), role: 'admin'}).then(function(data){
+      var rows = data.submissions || [];
+      var tbody = document.getElementById('data-body');
+      if(rows.length === 0){ tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text3)">Ma jiro xog</td></tr>'; return }
+      var html = '';
+      var recent = rows.slice(-50).reverse();
+      recent.forEach(function(r){
+        html += '<tr><td style="font-size:10px;color:var(--text3)">' + APP.esc(String(r['Gudbinta ID (Submission ID)']||'').slice(-6)) + '</td><td>' + APP.esc(r._city||'') + '</td><td>' + APP.esc(r['Magaca Milkiilaha (Owner Name)']||'') + '</td><td style="color:var(--accent)">' + (r['Bedka m\u00b2 (Area)']||'') + '</td><td>' + ((r['Taariikhda (Date)']||'').slice(0,10)) + '</td></tr>';
+      });
+      tbody.innerHTML = html;
+    });
+  }
+
+  window.editUser = function(userId){
+    var users = document.querySelectorAll('#users-body tr');
+    /* We'll just open the modal for editing - in production you'd fetch user data */
+    document.getElementById('user-modal-title').textContent = 'Wax Ka Bedelka Isticmaalaha #' + userId;
+    document.getElementById('edit-user-id').value = userId;
+    document.getElementById('modal-username').value = '';
+    document.getElementById('modal-password').value = '';
+    document.getElementById('user-modal').classList.add('show');
+  };
+
+  /* Add user */
+  document.getElementById('btn-add-user').onclick = function(){
+    document.getElementById('user-modal-title').textContent = 'Isticmaale Cusub';
+    document.getElementById('edit-user-id').value = '';
+    document.getElementById('modal-username').value = '';
+    document.getElementById('modal-password').value = '';
+    document.getElementById('modal-role').value = 'engineer';
+    document.getElementById('modal-city').value = APP.getCity() || '';
+    document.getElementById('modal-active').checked = true;
+    document.getElementById('user-modal').classList.add('show');
+  };
+
+  document.getElementById('modal-cancel').onclick = function(){
+    document.getElementById('user-modal').classList.remove('show');
+  };
+
+  document.getElementById('modal-save').onclick = function(){
+    var userId = document.getElementById('edit-user-id').value;
+    var data = {
+      username: document.getElementById('modal-username').value.trim(),
+      password: document.getElementById('modal-password').value.trim(),
+      role: document.getElementById('modal-role').value,
+      city_code: document.getElementById('modal-city').value.trim().toUpperCase(),
+      active: document.getElementById('modal-active').checked
+    };
+
+    if(!data.username){ APP.toast('Username waa loo baahan yahay', 'error'); return }
+
+    if(userId){
+      data.user_id = parseInt(userId);
+      AUTH.updateUser(data).then(function(resp){
+        if(resp.success){ APP.toast('Isticmaale waa la cusboonaysiiyay!', 'success'); document.getElementById('user-modal').classList.remove('show'); loadUsers() }
+        else { APP.toast('Khalad: ' + (resp.error||''), 'error') }
+      });
+    } else {
+      if(!data.password){ APP.toast('Password waa loo baahan yahay', 'error'); return }
+      AUTH.addUser(data).then(function(resp){
+        if(resp.success){ APP.toast('Isticmaale waa la abuuray!', 'success'); document.getElementById('user-modal').classList.remove('show'); loadUsers() }
+        else { APP.toast('Khalad: ' + (resp.error||''), 'error') }
+      });
+    }
+  };
+
+  /* Export all data */
+  document.getElementById('btn-export-all').onclick = function(){
+    API.call({action:'exportCSV', token: APP.getToken(), city_code: 'ALL'}).then(function(data){
+      var csv = data.csv || '';
+      if(!csv){ APP.toast('Ma jiro xog', 'error'); return }
+      var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'DHB_all_data_' + APP.today() + '.csv';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }).catch(function(err){ APP.toast('Khalad: ' + err.message, 'error') });
+  };
+
+  loadUsers();
+  loadCities();
+  loadAllData();
+})();
+</script>
+</body>
+</html>

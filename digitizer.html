@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DHB — Land Digitizer</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+#map{width:100%;height:100%}
+#map-container{flex:1;position:relative;min-height:0}
+.leaflet-control-zoom a{background:#0d1f3c!important;color:#fff!important;border-color:rgba(0,200,150,.3)!important}
+.leaflet-control-attribution{font-size:8px!important;background:rgba(10,22,40,.7)!important;color:#8899aa!important}
+.leaflet-control-attribution a{color:#00c896!important}
+.dist-label{background:#0a1628;color:#00c896;font-size:9px;font-weight:700;padding:1px 5px;border:1px solid rgba(0,200,150,.4);border-radius:3px;white-space:nowrap;text-align:center}
+.gps-dot{width:12px;height:12px;background:#4488ff;border:2px solid #fff;border-radius:50%}
+.leaflet-popup-content-wrapper{background:#0d1f3c;color:#fff;border:1px solid rgba(0,200,150,.3);border-radius:8px}
+.leaflet-popup-tip{background:#0d1f3c}
+.leaflet-popup-content{margin:8px 12px;font-size:12px;text-align:center}
+.popup-del-btn{background:#ff5c5c;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:12px;cursor:pointer;min-height:36px;margin-top:4px;width:100%}
+.popup-del-btn:active{opacity:.8}
+#info-panel{background:#0d1f3c;padding:6px 12px;display:none;flex-shrink:0;border-bottom:1px solid rgba(0,200,150,.1);font-size:11px;gap:4px;flex-wrap:wrap}
+#info-panel.show{display:flex}
+.info-item{color:#ccd;margin-right:12px}
+.info-item strong{color:#00c896}
+#coord-panel{background:#0d1f3c;max-height:0;overflow:hidden;transition:max-height .3s;flex-shrink:0}
+#coord-panel.open{max-height:200px}
+#coord-list{padding:6px 12px 8px;font-size:10px;color:#aab;max-height:160px;overflow-y:auto;font-family:monospace}
+#coord-list .pt-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="app-header" style="min-height:44px">
+    <div class="logo"><div class="logo-icon">DHB</div><div><div class="logo-text">Land Digitizer</div><div class="header-sub">Sawirka Dhulka</div></div></div>
+    <div class="header-right"><div class="status-badge" id="gps-status" style="background:rgba(0,200,150,.15);color:#00c896;padding:2px 8px;border-radius:4px;font-size:10px">GPS: &#x2717;</div></div>
+  </header>
+
+  <div id="info-panel"></div>
+
+  <div id="map-container"><div id="loading-screen" class="hidden"><div class="spinner"></div><div class="loading-text">Soo rarista khariidadda...</div></div><div id="map"></div></div>
+
+  <div id="coord-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:4px 12px">
+      <span style="color:#00c896;font-size:11px">Iskuduwaha &gt;:</span>
+      <span id="pt-count" style="color:#8899aa;font-size:10px">0 dhibcood</span>
+    </div>
+    <div id="coord-list"></div>
+  </div>
+
+  <div id="controls" style="background:#0d1f3c;padding:6px 8px;display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0;border-top:1px solid rgba(0,200,150,.2)">
+    <button class="ctrl-btn" id="btn-undo" disabled style="background:transparent;border:1px solid rgba(0,200,150,.3);color:#fff;padding:8px;border-radius:6px;font-size:11px;cursor:pointer;min-height:44px;flex:1;touch-action:manipulation"><span style="font-size:14px">&#8617;</span> Dib</button>
+    <button class="ctrl-btn" id="btn-coords" style="background:transparent;border:1px solid rgba(0,200,150,.3);color:#fff;padding:8px;border-radius:6px;font-size:11px;cursor:pointer;min-height:44px;flex:1;touch-action:manipulation"><span style="font-size:14px">&#128204;</span> Iskuduway</button>
+    <button class="ctrl-btn" id="btn-gps" style="background:transparent;border:1px solid rgba(0,200,150,.3);color:#fff;padding:8px;border-radius:6px;font-size:11px;cursor:pointer;min-height:44px;flex:1;touch-action:manipulation"><span style="font-size:14px">&#128225;</span> Goobta</button>
+    <button class="ctrl-btn" id="btn-clear" style="background:transparent;border:1px solid rgba(255,80,80,.4);color:#ff5c5c;padding:8px;border-radius:6px;font-size:11px;cursor:pointer;min-height:44px;flex:1;touch-action:manipulation"><span style="font-size:14px">&#128465;</span> Nadiifi</button>
+    <button class="ctrl-btn" id="btn-export" style="background:#00c896;color:#0a1628;font-weight:700;padding:8px;border-radius:6px;font-size:11px;cursor:pointer;min-height:44px;flex:1;border:none;touch-action:manipulation"><span style="font-size:14px">&#11015;</span> Soo Deg KML</button>
+    <button class="ctrl-btn" id="btn-save-server" style="background:#4488ff;color:#fff;font-weight:700;padding:8px;border-radius:6px;font-size:11px;cursor:pointer;min-height:44px;flex:1;border:none;touch-action:manipulation"><span style="font-size:14px">&#9729;</span> Keydso Server</button>
+  </div>
+
+  <div id="status-bar" style="background:#0a1628;padding:3px 12px;display:flex;gap:12px;font-size:10px;color:#8899aa;flex-shrink:0">
+    <div class="stat">Dhibcood: <span style="color:#00c896;font-weight:600" id="stat-points">0</span></div>
+    <div class="stat">Bed: <span style="color:#00c896;font-weight:600" id="stat-area">0 m&#178;</span></div>
+    <div class="stat">Wareeg: <span style="color:#00c896;font-weight:600" id="stat-perim">0 m</span></div>
+    <div class="stat" id="stat-gps-acc">GPS: -</div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/map.js"></script>
+<script>
+(function(){
+  /* ---- URL Params (from KoboToolbox or form) ---- */
+  var p = new URLSearchParams(location.search);
+  var urlData = {
+    owner: p.get('owner_name') || '',
+    phone: p.get('owner_phone') || '',
+    subdistrict: p.get('sub_district') || '',
+    section: p.get('section') || '',
+    area: p.get('area_calc') || '',
+    engineer: p.get('site_engineer') || '',
+    date: p.get('survey_date') || ''
+  };
+
+  /* ---- Info Panel ---- */
+  var infoPanel = document.getElementById('info-panel');
+  if(urlData.owner || urlData.subdistrict){
+    infoPanel.classList.add('show');
+    infoPanel.innerHTML =
+      '<span class="info-item"><strong>Milkiilaha:</strong> ' + APP.esc(urlData.owner) + '</span>' +
+      '<span class="info-item"><strong>Tel:</strong> ' + APP.esc(urlData.phone) + '</span>' +
+      '<span class="info-item"><strong>Degmo:</strong> ' + APP.esc(urlData.subdistrict) + '</span>' +
+      '<span class="info-item"><strong>Xaafad:</strong> ' + APP.esc(urlData.section) + '</span>' +
+      '<span class="info-item"><strong>Bed:</strong> ' + APP.esc(urlData.area) + ' m&#178;</span>' +
+      '<span class="info-item"><strong>Injineer:</strong> ' + APP.esc(urlData.engineer) + '</span>' +
+      '<span class="info-item"><strong>Taariikh:</strong> ' + APP.esc(urlData.date) + '</span>';
+  }
+
+  /* ---- Init Map ---- */
+  DIGITIZER.init('map');
+
+  /* ---- Coord List (custom, not using DIGITIZER) ---- */
+  var origRender = DIGITIZER.render;
+  DIGITIZER.render = function(){
+    origRender.call(DIGITIZER);
+    var list = document.getElementById('coord-list');
+    if(list){
+      list.innerHTML = '';
+      DIGITIZER.points.forEach(function(p, i){
+        var row = document.createElement('div');
+        row.className = 'pt-row';
+        row.innerHTML = '<span>#' + (i+1) + ': ' + p.lat.toFixed(6) + ', ' + p.lng.toFixed(6) + '</span>';
+        list.appendChild(row);
+      });
+    }
+  };
+
+  /* ---- Button Handlers ---- */
+  document.getElementById('btn-undo').onclick = function(){ DIGITIZER.undoPoint() };
+
+  document.getElementById('btn-coords').onclick = function(){
+    var panel = document.getElementById('coord-panel');
+    panel.classList.toggle('open');
+  };
+
+  document.getElementById('btn-gps').onclick = function(){
+    DIGITIZER.isLocating ? DIGITIZER.stopGPS() : DIGITIZER.startGPS();
+  };
+
+  document.getElementById('btn-clear').onclick = function(){
+    APP.confirm('Ma hubtaa inaad nadiifiso dhibcaha oo dhan?', function(){ DIGITIZER.clearAll() });
+  };
+
+  /* ---- KML Download ---- */
+  document.getElementById('btn-export').onclick = function(){
+    var result = DIGITIZER.buildKML();
+    if(!result){ APP.toast('Ugu yaraan 3 dhibcood', 'error'); return }
+
+    var owner = urlData.owner || 'Unknown';
+    var safe = owner.replace(/[^a-zA-Z0-9_-]/g, '_');
+    var date = urlData.date || APP.today();
+    var filename = 'DHB_' + safe + '_' + date + '.kml';
+
+    var blob = new Blob([result.kml], {type: 'application/vnd.google-earth.kml+xml'});
+    var blobUrl = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = blobUrl; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+
+    APP.toast('KML waa la soo degay! Bed: ' + result.area.toFixed(1) + ' m\u00b2', 'success');
+  };
+
+  /* ---- Save to Server ---- */
+  var KML_SAVE_URL = 'https://script.google.com/macros/s/AKfycbxQ4vFQY4HWk6P4FuTKjbxZ8mHF16-wEZJF6x9KMoGaCoHTpTFszFJRiQ0kXASvQO7a/exec';
+
+  document.getElementById('btn-save-server').onclick = function(){
+    var result = DIGITIZER.buildKML();
+    if(!result){ APP.toast('Ugu yaraan 3 dhibcood', 'error'); return }
+
+    APP.toast('KML-ka waa la dirayaa server-ka...', 'info');
+
+    var fd = new URLSearchParams();
+    fd.append('kml_content', result.kml);
+    fd.append('owner_name', urlData.owner);
+    fd.append('owner_phone', urlData.phone);
+    fd.append('sub_district', urlData.subdistrict);
+    fd.append('section', urlData.section);
+    fd.append('survey_date', urlData.date);
+    fd.append('engineer', urlData.engineer);
+    fd.append('area', result.area.toFixed(1));
+    fd.append('perimeter', result.perimeter.toFixed(1));
+    fd.append('num_points', String(DIGITIZER.points.length));
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', KML_SAVE_URL, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onload = function(){
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        if(resp.success){
+          APP.toast('KML waa la keydiyay!', 'success');
+          /* Save to localStorage so form.html can pick it up */
+          localStorage.setItem('dhb_kml_return', JSON.stringify(resp));
+        } else {
+          APP.toast('Khalad: ' + (resp.error || 'Unknown'), 'error');
+        }
+      } catch(e){
+        APP.toast('Khalad: Server response waa khalad', 'error');
+      }
+    };
+    xhr.onerror = function(){ APP.toast('Khalad: Server lama gaarin', 'error') };
+    xhr.send(fd.toString());
+  };
+
+  /* ---- Coord panel tracking ---- */
+  DIGITIZER.updateStats();
+})();
+</script>
+</body>
+</html>

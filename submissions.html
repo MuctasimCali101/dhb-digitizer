@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DHB — Gudbinta</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div class="logo"><div class="logo-icon">DHB</div><div><div class="logo-text">Gudbinta</div><div class="header-sub">Dhammaan gudbinta</div></div></div>
+    <div class="header-right"><button class="btn btn-sm btn-outline" onclick="APP.logout()" style="width:auto">Bax</button></div>
+  </header>
+
+  <div style="padding:8px 16px 0;flex-shrink:0">
+    <div class="filter-bar">
+      <input class="form-input" id="filter-search" type="text" placeholder="Raadi magaca...">
+      <input class="form-input" id="filter-date-from" type="date" style="flex:0.7;min-width:auto">
+      <input class="form-input" id="filter-date-to" type="date" style="flex:0.7;min-width:auto">
+    </div>
+    <div class="filter-bar">
+      <select class="form-input form-select" id="filter-sub-district" style="flex:1"><option value="">Dhammaan Xaafadaha</option></select>
+      <button class="btn btn-sm btn-primary" id="btn-export-csv" style="width:auto;min-height:36px">CSV</button>
+    </div>
+  </div>
+
+  <div class="app-content" style="padding-top:4px">
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Milkiilaha</th><th>Xaafad</th><th>Bed m²</th><th>Taariikh</th><th></th>
+        </tr></thead>
+        <tbody id="submissions-body">
+          <tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px">Xog lagu soo rarayaa...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="pagination" style="display:flex;justify-content:center;gap:8px;padding:12px 0"></div>
+  </div>
+
+  <nav class="app-footer">
+    <button class="nav-item" onclick="location.href='dashboard.html'"><span class="nav-icon">&#127968;</span> Dashboard</button>
+    <button class="nav-item" onclick="location.href='form.html'"><span class="nav-icon">&#128221;</span> Cusub</button>
+    <button class="nav-item" onclick="location.href='digitizer.html'"><span class="nav-icon">&#128250;</span> Khariidad</button>
+    <button class="nav-item active" onclick="location.href='submissions.html'"><span class="nav-icon">&#128202;</span> Gudbin</button>
+  </nav>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+(function(){
+  if(!APP.requireAuth()) return;
+
+  var allSubmissions = [];
+  var currentPage = 1;
+  var pageSize = 20;
+
+  /* Populate sub-district filter */
+  var sdFilter = document.getElementById('filter-sub-district');
+  Object.keys(APP.config.SUB_DISTRICTS).forEach(function(sd){
+    var o = document.createElement('option');
+    o.value = sd; o.textContent = sd;
+    sdFilter.appendChild(o);
+  });
+
+  function loadData(){
+    API.getSubmissions().then(function(data){
+      allSubmissions = data.submissions || [];
+      renderTable();
+    }).catch(function(err){
+      document.getElementById('submissions-body').innerHTML =
+        '<tr><td colspan="6" style="text-align:center;color:var(--warn);padding:30px">Khalad: ' + APP.esc(err.message) + '</td></tr>';
+    });
+  }
+
+  function getFiltered(){
+    var q = document.getElementById('filter-search').value.trim().toLowerCase();
+    var dFrom = document.getElementById('filter-date-from').value;
+    var dTo = document.getElementById('filter-date-to').value;
+    var sd = document.getElementById('filter-sub-district').value;
+
+    return allSubmissions.filter(function(r){
+      var name = (r['Magaca Milkiilaha (Owner Name)'] || '').toLowerCase();
+      if(q && name.indexOf(q) === -1) return false;
+      if(sd && (r['Degmada (Sub-district)'] || '') !== sd) return false;
+      var d = (r['Taariikhda (Date)'] || '').slice(0,10);
+      if(dFrom && d < dFrom) return false;
+      if(dTo && d > dTo) return false;
+      return true;
+    });
+  }
+
+  function renderTable(){
+    var filtered = getFiltered();
+    var totalPages = Math.ceil(filtered.length / pageSize) || 1;
+    if(currentPage > totalPages) currentPage = totalPages;
+
+    var start = (currentPage - 1) * pageSize;
+    var page = filtered.slice(start, start + pageSize);
+    var tbody = document.getElementById('submissions-body');
+
+    if(page.length === 0){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:30px">Ma jiro gudbin</td></tr>';
+      renderPagination(totalPages);
+      return;
+    }
+
+    var html = '';
+    page.forEach(function(r){
+      var id = r['Gudbinta ID (Submission ID)'] || '';
+      var name = r['Magaca Milkiilaha (Owner Name)'] || 'Unknown';
+      var sd = r['Degmada (Sub-district)'] || '';
+      var area = r['Bedka m\u00b2 (Area)'] || '';
+      var date = (r['Taariikhda (Date)'] || '').slice(0,10);
+      html += '<tr onclick="showDetail(' + id + ')" style="cursor:pointer">' +
+        '<td style="font-size:10px;color:var(--text3)">' + APP.esc(String(id).slice(-6)) + '</td>' +
+        '<td style="font-weight:600;color:var(--text)">' + APP.esc(name) + '</td>' +
+        '<td>' + APP.esc(sd) + '</td>' +
+        '<td style="color:var(--accent)">' + area + '</td>' +
+        '<td style="font-size:10px">' + date + '</td>' +
+        '<td><span class="status-badge status-submitted">Dhammaystiran</span></td>' +
+      '</tr>';
+    });
+    tbody.innerHTML = html;
+    renderPagination(totalPages);
+  }
+
+  function renderPagination(total){
+    var el = document.getElementById('pagination');
+    if(total <= 1){ el.innerHTML = ''; return }
+    var html = '';
+    for(var i=1; i<=total; i++){
+      html += '<button class="btn btn-sm ' + (i===currentPage?'btn-primary':'btn-outline') + '" onclick="gotoPage(' + i + ')" style="width:auto;min-width:36px">' + i + '</button>';
+    }
+    el.innerHTML = html;
+  }
+
+  window.gotoPage = function(n){ currentPage = n; renderTable() };
+
+  window.showDetail = function(id){
+    var sub = allSubmissions.find(function(r){ return String(r['Gudbinta ID (Submission ID)']) === String(id) });
+    if(!sub){ APP.toast('Gudbin lama helin', 'error'); return }
+    /* Show in modal */
+    var modal = document.createElement('div');
+    modal.className = 'modal-overlay show';
+    var html = '<div class="modal" style="max-width:500px"><h3>Gudbinta #' + id + '</h3>';
+    Object.keys(sub).forEach(function(k){
+      if(k.indexOf('Photo') > -1 && sub[k]){
+        html += '<div><strong>' + APP.esc(k) + ':</strong><br><img src="' + APP.esc(sub[k]) + '" style="max-width:100%;max-height:100px;border-radius:4px;margin:4px 0"></div>';
+      } else if(sub[k]){
+        html += '<div style="margin-bottom:4px"><span style="color:var(--text3);font-size:11px">' + APP.esc(k) + ':</span> <span style="color:var(--text)">' + APP.esc(String(sub[k])) + '</span></div>';
+      }
+    });
+    html += '<div class="modal-actions"><button class="btn btn-primary btn-sm" onclick="window.print()">Daabac</button><button class="btn btn-outline btn-sm" onclick="this.closest(\'.modal-overlay\').remove()">Xidh</button></div>';
+    html += '</div>';
+    modal.innerHTML = html;
+    document.body.appendChild(modal);
+  };
+
+  /* Filter events */
+  document.getElementById('filter-search').oninput = function(){ currentPage=1; renderTable() };
+  document.getElementById('filter-date-from').onchange = function(){ currentPage=1; renderTable() };
+  document.getElementById('filter-date-to').onchange = function(){ currentPage=1; renderTable() };
+  document.getElementById('filter-sub-district').onchange = function(){ currentPage=1; renderTable() };
+
+  /* CSV Export */
+  document.getElementById('btn-export-csv').onclick = function(){
+    var filtered = getFiltered();
+    if(filtered.length === 0){ APP.toast('Ma jiro xog', 'error'); return }
+
+    var headers = Object.keys(filtered[0]);
+    var csv = headers.join(',') + '\n';
+    filtered.forEach(function(row){
+      csv += headers.map(function(h){
+        var val = String(row[h] || '').replace(/"/g, '""');
+        return '"' + val + '"';
+      }).join(',') + '\n';
+    });
+
+    var blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'DHB_submissions_' + APP.today() + '.csv';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    APP.toast('CSV waa la soo degay!', 'success');
+  };
+
+  loadData();
+})();
+</script>
+</body>
+</html>

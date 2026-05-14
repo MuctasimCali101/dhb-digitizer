@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DHB — Engineering Report</title>
+<link rel="stylesheet" href="assets/css/style.css">
+<style>
+body{background:#fff;color:#222;font-family:'Segoe UI',Arial,sans-serif;font-size:11pt;padding:20px;max-width:210mm;margin:0 auto}
+h1{font-size:18pt;color:#0a1628;text-align:center;margin:0 0 2px}
+.subtitle{text-align:center;font-size:9pt;color:#666;margin-bottom:12px;border-bottom:2px solid #00c896;padding-bottom:8px}
+table{width:100%;border-collapse:collapse;margin-bottom:8px;font-size:10pt}
+td{padding:4px 8px;border-bottom:1px solid #eee;vertical-align:top}
+td.label{width:35%;color:#555;font-weight:600;background:#f8f8f8}
+td.value{width:65%}
+.section-title{background:#0a1628;color:#00c896;padding:5px 10px;font-size:10pt;font-weight:700;border-radius:3px;margin:10px 0 4px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.logo{width:70px;height:70px;background:#0a1628;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;border-radius:4px;font-size:14pt}
+.qr img{width:80px;height:80px}
+.map-img{max-width:100%;height:auto;margin:6px 0;border:1px solid #ddd;border-radius:3px}
+.photo{max-width:140px;max-height:100px;border:1px solid #ddd;border-radius:3px;margin:4px}
+.photo-row{display:flex;gap:12px;flex-wrap:wrap;margin:4px 0}
+.footer{text-align:center;font-size:8pt;color:#999;border-top:1px solid #ccc;padding-top:6px;margin-top:12px}
+@media print{body{padding:0;margin:0}@page{size:A4 portrait;margin:1.2cm 1.5cm}}
+</style>
+</head>
+<body>
+<div id="report-content">
+  <p style="text-align:center;color:#999;padding:40px">Loading report data...</p>
+</div>
+
+<script src="assets/js/app.js"></script>
+<script>
+(function(){
+  var dataStr = APP.getUrlParam('data');
+  var d = {};
+  if(dataStr){
+    try { d = JSON.parse(decodeURIComponent(dataStr)) } catch(e){}
+  }
+
+  var lat = parseFloat(d.gps_lat || d.Latitude || 0) || 0;
+  var lng = parseFloat(d.gps_lon || d.Longitude || 0) || 0;
+  var gmapsUrl = (lat && lng) ? 'https://maps.google.com/?q=' + lat + ',' + lng : '';
+  var qrData = gmapsUrl || (lat + ',' + lng) || 'DHB';
+  var qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(qrData);
+  var staticMap = (lat && lng) ? 'https://staticmap.openstreetmap.de/staticmap.php?center=' + lat + ',' + lng + '&zoom=18&size=400x300&maptype=mapnik' : '';
+
+  var html =
+  '<div class="header">' +
+    '<div class="logo">DHB</div>' +
+    '<div style="flex:1;text-align:center"><h1>Engineering Form DHB</h1><div class="subtitle">Foorma Caddeynta Hanti Ma Guuratda &mdash; Bosaso, Somalia</div></div>' +
+    '<div class="qr"><img src="' + qrImg + '" alt="QR"></div>' +
+  '</div>';
+
+  html += section('Macluumaadka Gudbinta', [
+    ['Gudbinta ID', d.submission_id || d['Gudbinta ID (Submission ID)'] || '-'],
+    ['Taariikhda', d.survey_date || d['Taariikhda (Date)'] || '-'],
+    ['Injineer', d.site_engineer || d['Injineer (Engineer)'] || '-']
+  ]);
+
+  html += section('Macluumaadka Milkiilaha', [
+    ['Magaca Milkiilaha', d.owner_name || d['Magaca Milkiilaha (Owner Name)'] || '-'],
+    ['Telefoonka', d.owner_phone || d['Telefoonka (Phone)'] || '-'],
+    ['Magaca Hooyada', d.mother_name || d['Magaca Hooyada (Mother Name)'] || '-'],
+    ['Jinsiga', d.gender || d['Jinsiga (Gender)'] || '-']
+  ]);
+
+  html += section('Macluumaadka Tixraaca', [
+    ['Magaca', d.ref_name || d['Magaca Tixraaca (Reference Name)'] || '-'],
+    ['Tel', d.ref_phone || d['Tel Tixraaca (Reference Phone)'] || '-'],
+    ['Jinsiga', d.ref_gender || d['Jinsiga Tixraaca (Ref Gender)'] || '-'],
+    ['Xiriirka', d.relationship || d['Xiriirka (Relationship)'] || '-']
+  ]);
+
+  html += section('Macluumaadka Dhulka', [
+    ['Nooca Hantida', d.property_type || d['Nooca Hantida (Property Type)'] || '-'],
+    ['Ballaca (m)', d.width || d['Ballaca (Width)'] || '-'],
+    ['Dhererka (m)', d.length || d['Dhererka (Length)'] || '-'],
+    ['Bedka (m\u00b2)', d.area_calc || d['Bedka m\u00b2 (Area)'] || '-']
+  ]);
+
+  html += section('Macluumaadka Kaydastarka', [
+    ['Degmada', d.sub_district || d['Degmada (Sub-district)'] || '-'],
+    ['Xaafadda', d.section || d['Xaafadda (Section)'] || '-'],
+    ['Waddada', d.street || d['Magaca Waddada (Street)'] || '-'],
+    ['Calaamadda', d.nearby || d['Calaamadda (Landmark)'] || '-']
+  ]);
+
+  html += section('Xuduudaha Dariska', [
+    ['Waqooyi', (d.north_name || d['Waqooyi (North Neighbor)'] || '-') + ' (' + (d.north_dist || d['Waqooyi masaafo (North Distance)'] || '0') + ' m)'],
+    ['Koonfur', (d.south_name || d['Koonfur (South Neighbor)'] || '-') + ' (' + (d.south_dist || d['Koonfur masaafo (South Distance)'] || '0') + ' m)'],
+    ['Bari', (d.east_name || d['Bari (East Neighbor)'] || '-') + ' (' + (d.east_dist || d['Bari masaafo (East Distance)'] || '0') + ' m)'],
+    ['Galbeed', (d.west_name || d['Galbeed (West Neighbor)'] || '-') + ' (' + (d.west_dist || d['Galbeed masaafo (West Distance)'] || '0') + ' m)']
+  ]);
+
+  html += section('Xogta Nootaayada', [
+    ['TIX/LR Number', d.tix_number || d['TIX/LR Number'] || '-'],
+    ['Taariikhda', d.tix_date || d['Taariikhda TIX (Issue Date)'] || '-'],
+    ['Hay\'adda', d.tix_authority || d['Hay\'adda TIX (Authority)'] || '-']
+  ]);
+
+  html += section('Macluumaadka GIS', [
+    ['Latitude', lat.toString()],
+    ['Longitude', lng.toString()],
+    ['Google Maps', gmapsUrl ? '<a href="' + gmapsUrl + '">' + gmapsUrl + '</a>' : '-']
+  ]);
+
+  if(staticMap){
+    html += '<div class="section-title">Digitized Land Parcel</div><img src="' + staticMap + '" class="map-img" alt="Map">';
+  }
+
+  var ownerPhoto = d.owner_photo || d['Sawirka Milkiilaha (Owner Photo)'] || '';
+  var propPhoto = d.property_photo || d['Sawirka Dhulka (Property Photo)'] || '';
+  if(ownerPhoto || propPhoto){
+    html += '<div class="section-title">Sawirrada</div><div class="photo-row">';
+    if(ownerPhoto) html += '<div><div style="font-size:8pt;color:#666;margin-bottom:2px">Milkiilaha:</div><img src="' + ownerPhoto + '" class="photo"></div>';
+    if(propPhoto) html += '<div><div style="font-size:8pt;color:#666;margin-bottom:2px">Dhulka:</div><img src="' + propPhoto + '" class="photo"></div>';
+    html += '</div>';
+  }
+
+  html += '<div class="footer">Engineering Form DHB &mdash; Foorma Caddeynta Hanti Ma Guuratda<br>Generated: ' + new Date().toISOString().slice(0,16).replace('T',' ') + ' &mdash; Bosaso, Somalia</div>';
+
+  document.getElementById('report-content').innerHTML = html;
+
+  function section(title, rows){
+    var s = '<div class="section-title">' + title + '</div><table>';
+    for(var i=0;i<rows.length;i++){
+      s += '<tr><td class="label">' + rows[i][0] + '</td><td class="value">' + (rows[i][1] || '') + '</td></tr>';
+    }
+    s += '</table>';
+    return s;
+  }
+
+  window.print();
+})();
+</script>
+</body>
+</html>

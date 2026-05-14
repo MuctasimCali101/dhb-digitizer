@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DHB — Diwaangelin Cusub</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <div class="logo">
+      <div class="logo-icon">DHB</div>
+      <div>
+        <div class="logo-text">Diwaangelin Cusub</div>
+        <div class="header-sub" id="page-indicator">Bog 1 of 9</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-sm btn-outline" onclick="APP.logout()" style="width:auto">Bax</button>
+    </div>
+  </header>
+
+  <div class="progress-label"><span id="page-name">Horudhac</span></div>
+  <div class="progress-bar" id="progress-bar">
+    <div class="progress-step active" data-step="1"></div>
+    <div class="progress-step" data-step="2"></div>
+    <div class="progress-step" data-step="3"></div>
+    <div class="progress-step" data-step="4"></div>
+    <div class="progress-step" data-step="5"></div>
+    <div class="progress-step" data-step="6"></div>
+    <div class="progress-step" data-step="7"></div>
+    <div class="progress-step" data-step="8"></div>
+    <div class="progress-step" data-step="9"></div>
+  </div>
+
+  <div id="form-pages" style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:0 16px">
+    <!-- Page 1: Horudhac -->
+    <div class="form-page active" data-page="1">
+      <div class="section-title">Bog 1 — Horudhaca</div>
+      <div class="form-group">
+        <label class="form-label">Injineerka Goobta</label>
+        <input class="form-input" id="f-engineer" type="text" readonly style="opacity:.7">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Taariikhda Sahaminta</label>
+        <input class="form-input" id="f-date" type="date">
+      </div>
+    </div>
+
+    <!-- Page 2: Milkiilaha -->
+    <div class="form-page" data-page="2">
+      <div class="section-title">Bog 2 — Macluumaadka Milkiilaha</div>
+      <div class="form-group">
+        <label class="form-label">Magaca Milkiilaha <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-owner-name" type="text" placeholder="Magaca Buuxa" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mobilka <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-owner-phone" type="tel" placeholder="Lambarada Keliya" inputmode="numeric" pattern="[0-9]+" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Magaca Hooyadiis <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-mother" type="text" placeholder="Magaca Hooyada" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Jinsiga <span style="color:var(--warn)">*</span></label>
+        <select class="form-input form-select" id="f-gender" required>
+          <option value="">Dooro</option>
+          <option value="male">Lab</option>
+          <option value="female">Dhedig</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sawirka Milkiilaha</label>
+        <input class="form-input" id="f-owner-photo" type="file" accept="image/*" capture="environment">
+      </div>
+    </div>
+
+    <!-- Page 3: Tixraaca -->
+    <div class="form-page" data-page="3">
+      <div class="section-title">Bog 3 — Macluumaadka Wakiilka / Tixraaca</div>
+      <div class="form-group">
+        <label class="form-label">Magaca Tixraaca <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-ref-name" type="text" placeholder="Magaca Tixraaca" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Jinsiga Tixraaca <span style="color:var(--warn)">*</span></label>
+        <select class="form-input form-select" id="f-ref-gender" required>
+          <option value="">Dooro</option>
+          <option value="male">Lab</option>
+          <option value="female">Dhedig</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mobilka Tixraaca <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-ref-phone" type="tel" placeholder="Lambarada Keliya" inputmode="numeric" pattern="[0-9]+" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Xiriirka <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-relationship" type="text" placeholder="Tusaale: Walaal, Waalid, Xaas" required>
+      </div>
+    </div>
+
+    <!-- Page 4: Dhulka -->
+    <div class="form-page" data-page="4">
+      <div class="section-title">Bog 4 — Macluumaadka Dhulka</div>
+      <div class="form-group">
+        <label class="form-label">Nooca Hantida</label>
+        <select class="form-input form-select" id="f-property-type">
+          <option value="">Dooro</option>
+          <option value="dhul">Dhul / Bogcad</option>
+          <option value="guri">Guri Dhisan</option>
+          <option value="beer">Beer</option>
+          <option value="dumin">Dumin</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Ballaca (Mitir) <span style="color:var(--warn)">*</span></label>
+          <input class="form-input" id="f-width" type="number" placeholder="0" min="0.1" step="0.01" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Dhererka (Mitir) <span style="color:var(--warn)">*</span></label>
+          <input class="form-input" id="f-length" type="number" placeholder="0" min="0.1" step="0.01" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bedka (m&sup2;)</label>
+        <input class="form-input" id="f-area" type="text" readonly style="opacity:.7;font-size:16px;font-weight:700;color:var(--accent)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sawirka Dhulka</label>
+        <input class="form-input" id="f-property-photo" type="file" accept="image/*" capture="environment">
+      </div>
+    </div>
+
+    <!-- Page 5: Kaydastarka -->
+    <div class="form-page" data-page="5">
+      <div class="section-title">Bog 5 — Macluumaadka Kaydastarka</div>
+      <div class="form-group">
+        <label class="form-label">Xaafada <span style="color:var(--warn)">*</span></label>
+        <select class="form-input form-select" id="f-sub-district" required>
+          <option value="">Dooro Xaafada</option>
+          <option value="Biyo Kulule">Biyo Kulule</option>
+          <option value="Buurcad">Buurcad</option>
+          <option value="Baalade">Baalade</option>
+          <option value="Benderqaasim">Benderqaasim</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Laanta <span style="color:var(--warn)">*</span></label>
+        <select class="form-input form-select" id="f-section" required>
+          <option value="">Dooro Laanta</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Magaca Wadada Ugu Udhow <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-street" type="text" placeholder="Magaca Wadada" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Goobta Ku Dhow (Landmark)</label>
+        <input class="form-input" id="f-nearby" type="text" placeholder="Goobta Caanka ah">
+      </div>
+    </div>
+
+    <!-- Page 6: Xuduudaha -->
+    <div class="form-page" data-page="6">
+      <div class="section-title">Bog 6 — Xuduudaha Dariska</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Waqooyi <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-north-name" placeholder="Magaca" required></div>
+        <div class="form-group"><label class="form-label">Masaafo (m) <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-north-dist" type="number" min="0" step="0.1" placeholder="0" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Koonfur <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-south-name" placeholder="Magaca" required></div>
+        <div class="form-group"><label class="form-label">Masaafo (m) <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-south-dist" type="number" min="0" step="0.1" placeholder="0" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Bari <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-east-name" placeholder="Magaca" required></div>
+        <div class="form-group"><label class="form-label">Masaafo (m) <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-east-dist" type="number" min="0" step="0.1" placeholder="0" required></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Galbeed <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-west-name" placeholder="Magaca" required></div>
+        <div class="form-group"><label class="form-label">Masaafo (m) <span style="color:var(--warn)">*</span></label><input class="form-input" id="f-west-dist" type="number" min="0" step="0.1" placeholder="0" required></div>
+      </div>
+    </div>
+
+    <!-- Page 7: Nootaayada -->
+    <div class="form-page" data-page="7">
+      <div class="section-title">Bog 7 — Xogta Nootaayada</div>
+      <div class="form-group">
+        <label class="form-label">TIX Number / Waraqada LR <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-tix-number" type="text" placeholder="Tusaale: LR-2024-00123" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Taariikhda Ay Soo Baxday <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-tix-date" type="date" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Kana Soo Baxday (Hay'adda) <span style="color:var(--warn)">*</span></label>
+        <input class="form-input" id="f-tix-authority" type="text" placeholder="Magaca Xafiiska ama Hay'adda" required>
+      </div>
+    </div>
+
+    <!-- Page 8: GIS -->
+    <div class="form-page" data-page="8">
+      <div class="section-title">Bog 8 — Macluumaadka GIS</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">
+        Ku dhufo batonka hoose si aad u furto khariidadda si aad u sawirto dhulka.
+      </p>
+      <button class="btn btn-primary mb-16" id="btn-open-digitizer">
+        <span class="icon">\ud83d\uddfa</span> Fur Khariidadda Digitizer
+      </button>
+      <div class="form-group">
+        <label class="form-label">GPS Latitude</label>
+        <input class="form-input" id="f-gps-lat" type="text" readonly placeholder="--">
+      </div>
+      <div class="form-group">
+        <label class="form-label">GPS Longitude</label>
+        <input class="form-input" id="f-gps-lng" type="text" readonly placeholder="--">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Google Maps Link</label>
+        <input class="form-input" id="f-gmaps-link" type="url" readonly placeholder="--">
+      </div>
+      <div class="form-group">
+        <label class="form-label">KML File Link (from Digitizer)</label>
+        <input class="form-input" id="f-kml-link" type="url" placeholder="Waa la soo degay..." readonly>
+      </div>
+      <button class="btn btn-primary" id="btn-get-gps"><span class="icon">\ud83d\udce1</span> Hel GPS Hadda</button>
+    </div>
+
+    <!-- Page 9: Submit -->
+    <div class="form-page" data-page="9">
+      <div class="section-title">Bog 9 — Soo Gudbinta</div>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px">
+        Fadlan hubi dhammaan macluumaadka ka hor soo gudbinta.
+      </p>
+      <div id="summary-review" style="font-size:12px;color:var(--text2);margin-bottom:16px;max-height:300px;overflow-y:auto"></div>
+      <button class="btn btn-primary" id="btn-submit">Soo Gudbi</button>
+    </div>
+  </div>
+
+  <!-- Page Nav Buttons -->
+  <div class="page-nav" style="padding:8px 16px">
+    <button class="btn btn-outline" id="btn-prev" disabled>&#8592; Dib</button>
+    <button class="btn btn-primary" id="btn-next">Dibad &#8594;</button>
+  </div>
+</div>
+
+<!-- Save Draft -->
+<div style="position:fixed;bottom:60px;left:8px;z-index:50">
+  <button class="btn btn-sm btn-outline" id="btn-save-draft" style="width:auto;font-size:10px;padding:4px 10px;min-height:32px">\ud83d\udcbe Kayd Qabyo</button>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/api.js"></script>
+<script>
+(function(){
+  if(!APP.requireAuth()) return;
+
+  var currentPage = 1;
+  var totalPages = 9;
+  var pageNames = ['Horudhac','Milkiilaha','Tixraaca','Dhulka','Kaydastarka','Xuduudaha','Nootaayada','GIS','Soo Gudbinta'];
+
+  document.getElementById('f-engineer').value = APP.getUser() || '';
+  document.getElementById('f-date').value = APP.today();
+
+  /* Auto-calculate area */
+  function calcArea(){
+    var w = parseFloat(document.getElementById('f-width').value) || 0;
+    var l = parseFloat(document.getElementById('f-length').value) || 0;
+    var area = w * l;
+    document.getElementById('f-area').value = area > 0 ? area.toFixed(2) + ' m\u00b2' : '';
+    return area;
+  }
+
+  document.getElementById('f-width').oninput = calcArea;
+  document.getElementById('f-length').oninput = calcArea;
+
+  /* Sub-district → Section cascade */
+  document.getElementById('f-sub-district').onchange = function(){
+    var sel = document.getElementById('f-section');
+    sel.innerHTML = '<option value="">Dooro Laanta</option>';
+    var sd = this.value;
+    var sections = APP.config.SUB_DISTRICTS[sd] || [];
+    sections.forEach(function(s){
+      var o = document.createElement('option');
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+  };
+
+  /* Page navigation */
+  function showPage(n){
+    document.querySelectorAll('.form-page').forEach(function(el){ el.classList.remove('active') });
+    var pg = document.querySelector('.form-page[data-page="' + n + '"]');
+    if(pg) pg.classList.add('active');
+    document.getElementById('page-indicator').textContent = 'Bog ' + n + ' of ' + totalPages;
+    document.getElementById('page-name').textContent = pageNames[n-1];
+    document.getElementById('btn-prev').disabled = n === 1;
+    document.getElementById('btn-next').textContent = n === totalPages ? 'Soo Gudbi \u2714' : 'Dibad \u2192';
+    document.querySelectorAll('.progress-step').forEach(function(el){
+      var step = parseInt(el.getAttribute('data-step'));
+      el.className = 'progress-step' + (step <= n ? ' done' : '') + (step === n ? ' active' : '');
+    });
+    currentPage = n;
+  }
+
+  function validatePage(n){
+    var page = document.querySelector('.form-page[data-page="' + n + '"]');
+    var required = page.querySelectorAll('[required]');
+    var valid = true;
+    required.forEach(function(el){
+      if(!el.value.trim()){
+        el.style.borderColor = 'var(--warn)';
+        valid = false;
+      } else {
+        el.style.borderColor = '';
+      }
+    });
+    return valid;
+  }
+
+  document.getElementById('btn-next').onclick = function(){
+    if(currentPage === totalPages){
+      submitForm();
+      return;
+    }
+    if(!validatePage(currentPage)){
+      APP.toast('Fadlan buuxi dhammaan goobaha loo baahan yahay', 'error');
+      return;
+    }
+    showPage(currentPage + 1);
+  };
+
+  document.getElementById('btn-prev').onclick = function(){
+    if(currentPage > 1) showPage(currentPage - 1);
+  };
+
+  /* Save draft */
+  document.getElementById('btn-save-draft').onclick = function(){
+    var data = collectFormData();
+    data._draft = true;
+    localStorage.setItem('dhb_draft_' + APP.getUser(), JSON.stringify(data));
+    APP.toast('Kayd qabyo waa la sameeyay!', 'success');
+  };
+
+  /* Load draft */
+  var draft = localStorage.getItem('dhb_draft_' + APP.getUser());
+  if(draft){
+    try {
+      var d = JSON.parse(draft);
+      if(d._draft){
+        APP.confirm('Waxaa jira kayd qabyo. Ma rabtaa inaad soo celiso?', function(){
+          restoreDraft(d);
+        });
+      }
+    } catch(e){}
+  }
+
+  function restoreDraft(d){
+    document.getElementById('f-date').value = d.survey_date || APP.today();
+    document.getElementById('f-owner-name').value = d.owner_name || '';
+    document.getElementById('f-owner-phone').value = d.owner_phone || '';
+    document.getElementById('f-mother').value = d.mother_name || '';
+    document.getElementById('f-gender').value = d.gender || '';
+    document.getElementById('f-ref-name').value = d.ref_name || '';
+    document.getElementById('f-ref-gender').value = d.ref_gender || '';
+    document.getElementById('f-ref-phone').value = d.ref_phone || '';
+    document.getElementById('f-relationship').value = d.relationship || '';
+    document.getElementById('f-property-type').value = d.property_type || '';
+    document.getElementById('f-width').value = d.width || '';
+    document.getElementById('f-length').value = d.length || '';
+    if(d.width && d.length) calcArea();
+    document.getElementById('f-sub-district').value = d.sub_district || '';
+    document.getElementById('f-sub-district').dispatchEvent(new Event('change'));
+    setTimeout(function(){
+      document.getElementById('f-section').value = d.section || '';
+    }, 50);
+    document.getElementById('f-street').value = d.street || '';
+    document.getElementById('f-nearby').value = d.nearby || '';
+    document.getElementById('f-north-name').value = d.north_name || '';
+    document.getElementById('f-north-dist').value = d.north_dist || '';
+    document.getElementById('f-south-name').value = d.south_name || '';
+    document.getElementById('f-south-dist').value = d.south_dist || '';
+    document.getElementById('f-east-name').value = d.east_name || '';
+    document.getElementById('f-east-dist').value = d.east_dist || '';
+    document.getElementById('f-west-name').value = d.west_name || '';
+    document.getElementById('f-west-dist').value = d.west_dist || '';
+    document.getElementById('f-tix-number').value = d.tix_number || '';
+    document.getElementById('f-tix-date').value = d.tix_date || '';
+    document.getElementById('f-tix-authority').value = d.tix_authority || '';
+    APP.toast('Kayd qabyo waa la soo celiyay!', 'success');
+  }
+
+  /* Collect form data */
+  function collectFormData(){
+    return {
+      owner_name: document.getElementById('f-owner-name').value.trim(),
+      owner_phone: document.getElementById('f-owner-phone').value.trim(),
+      mother_name: document.getElementById('f-mother').value.trim(),
+      gender: document.getElementById('f-gender').value,
+      ref_name: document.getElementById('f-ref-name').value.trim(),
+      ref_gender: document.getElementById('f-ref-gender').value,
+      ref_phone: document.getElementById('f-ref-phone').value.trim(),
+      relationship: document.getElementById('f-relationship').value.trim(),
+      property_type: document.getElementById('f-property-type').value,
+      width: document.getElementById('f-width').value,
+      length: document.getElementById('f-length').value,
+      area_calc: calcArea(),
+      sub_district: document.getElementById('f-sub-district').value,
+      section: document.getElementById('f-section').value,
+      street: document.getElementById('f-street').value.trim(),
+      nearby: document.getElementById('f-nearby').value.trim(),
+      north_name: document.getElementById('f-north-name').value.trim(),
+      north_dist: document.getElementById('f-north-dist').value,
+      south_name: document.getElementById('f-south-name').value.trim(),
+      south_dist: document.getElementById('f-south-dist').value,
+      east_name: document.getElementById('f-east-name').value.trim(),
+      east_dist: document.getElementById('f-east-dist').value,
+      west_name: document.getElementById('f-west-name').value.trim(),
+      west_dist: document.getElementById('f-west-dist').value,
+      tix_number: document.getElementById('f-tix-number').value.trim(),
+      tix_date: document.getElementById('f-tix-date').value,
+      tix_authority: document.getElementById('f-tix-authority').value.trim(),
+      survey_date: document.getElementById('f-date').value,
+      site_engineer: APP.getUser(),
+      gps_lat: document.getElementById('f-gps-lat').value,
+      gps_lon: document.getElementById('f-gps-lng').value,
+      gmaps_url: document.getElementById('f-gmaps-link').value,
+      kml_url: document.getElementById('f-kml-link').value
+    };
+  }
+
+  /* Open digitizer with form data */
+  document.getElementById('btn-open-digitizer').onclick = function(){
+    var fd = collectFormData();
+    var url = 'digitizer.html?' +
+      'owner_name=' + encodeURIComponent(fd.owner_name) +
+      '&owner_phone=' + encodeURIComponent(fd.owner_phone) +
+      '&sub_district=' + encodeURIComponent(fd.sub_district) +
+      '&section=' + encodeURIComponent(fd.section) +
+      '&area_calc=' + encodeURIComponent(fd.area_calc) +
+      '&site_engineer=' + encodeURIComponent(fd.site_engineer) +
+      '&survey_date=' + encodeURIComponent(fd.survey_date);
+    window.open(url, '_blank');
+  };
+
+  /* GPS */
+  document.getElementById('btn-get-gps').onclick = function(){
+    if(!navigator.geolocation){ APP.toast('GPS kama shaqeeyo', 'error'); return }
+    APP.toast('Helitaanka GPS...', 'info');
+    navigator.geolocation.getCurrentPosition(function(pos){
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      document.getElementById('f-gps-lat').value = lat.toFixed(6);
+      document.getElementById('f-gps-lng').value = lng.toFixed(6);
+      document.getElementById('f-gmaps-link').value = 'https://maps.google.com/?q=' + lat + ',' + lng;
+      APP.toast('GPS waa la helay!', 'success');
+    }, function(err){
+      APP.toast('GPS khalad: ' + err.message, 'error');
+    }, {enableHighAccuracy: true, timeout: 10000});
+  };
+
+  /* Check for KML link from digitizer (passed via localStorage) */
+  var kmlData = localStorage.getItem('dhb_kml_return');
+  if(kmlData){
+    try {
+      var kd = JSON.parse(kmlData);
+      document.getElementById('f-kml-link').value = kd.url || kd.filename || 'KML waa la soo degay';
+    } catch(e){}
+    localStorage.removeItem('dhb_kml_return');
+  }
+
+  /* Submit */
+  function submitForm(){
+    if(!validatePage(currentPage)){
+      APP.toast('Fadlan buuxi dhammaan goobaha', 'error');
+      return;
+    }
+
+    var data = collectFormData();
+    data._status = 'submitted';
+
+    APP.showLoading('Soo gudbinta...');
+
+    API.submitRegistration(data).then(function(resp){
+      APP.hideLoading();
+      if(resp.success){
+        localStorage.removeItem('dhb_draft_' + APP.getUser());
+        showSuccess(resp.submission_id || resp.id);
+      } else {
+        APP.toast('Khalad: ' + (resp.error || 'Server error'), 'error');
+      }
+    }).catch(function(err){
+      APP.hideLoading();
+      APP.toast('Khalad: ' + err.message, 'error');
+    });
+  }
+
+  function showSuccess(id){
+    document.getElementById('form-pages').style.display = 'none';
+    document.querySelector('.page-nav').style.display = 'none';
+    document.getElementById('btn-save-draft').style.display = 'none';
+    document.getElementById('page-name').textContent = '';
+
+    var div = document.createElement('div');
+    div.className = 'success-screen show';
+    div.innerHTML =
+      '<div class="success-icon">\u2705</div>' +
+      '<div class="success-title">Waa la soo gudbiyay!</div>' +
+      '<div class="success-sub">Gudbintaada waa la diwaangeliyay</div>' +
+      '<div class="success-id">' + APP.esc(id) + '</div>' +
+      '<div class="success-actions">' +
+        '<button class="btn btn-primary" onclick="location.href=\'dashboard.html\'">Ku Laabo Dashboard</button>' +
+        '<button class="btn btn-outline" onclick="location.href=\'form.html\'">Diwaangelin Kale</button>' +
+        '<button class="btn btn-outline" onclick="window.print()">Daabac Warbixinta</button>' +
+      '</div>';
+    document.querySelector('.app-content') ? document.querySelector('.app-content').appendChild(div) : document.querySelector('.app').appendChild(div);
+    document.querySelector('.fab').style.display = 'none';
+  }
+
+  /* Init */
+  showPage(1);
+})();
+</script>
+</body>
+</html>
